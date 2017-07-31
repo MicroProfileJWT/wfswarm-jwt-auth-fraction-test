@@ -1,0 +1,20 @@
+# A project defaults for use with MP-JWT auth-method that include additional role mapping
+swarm:
+  security:
+    security-domains:
+      jwt-jaspi:
+        jaspi-authentication:
+          login-module-stacks:
+            roles-lm-stack:
+              login-modules:
+                - login-module: rm
+                  code: RoleMapping
+                  flag: optional
+                  module-options:
+                    rolesProperties: jwt-roles.properties
+          auth-modules:
+            http:
+              code: org.wildfly.extension.undertow.security.jaspi.modules.HTTPSchemeServerAuthModule
+              module: org.wildfly.extension.undertow
+              flag: required
+              login-module-stack-ref: roles-lm-stack

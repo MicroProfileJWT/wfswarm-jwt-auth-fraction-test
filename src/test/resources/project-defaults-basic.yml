@@ -1,0 +1,36 @@
+# A project defaults for testing with BASIC auth rather than MP-JWT
+# Used for debugging how the authentication mechanism interacts with authorization
+swarm:
+  security:
+    security-domains:
+      other:
+        classic-mapping:
+          mapping-modules:
+            rolemapping:
+              code: SimpleRoles
+              type: role
+              module-options:
+                jdoe@example.com: AdditionalRole,MappedRole
+                admin@example.com: AdminRole,MappedAdminRole
+      jwt-jaspi:
+        jaspi-authentication:
+          login-module-stacks:
+            roles-lm-stack:
+              login-modules:
+                - login-module: ur
+                  code: UsersRoles
+                  flag: sufficient
+                  module-options:
+                    usersProperties: jwt-users.properties
+                    rolesProperties: jwt-roles.properties
+                - login-module: rm
+                  code: RoleMapping
+                  flag: optional
+                  module-options:
+                    rolesProperties: jwt-roles.properties
+          auth-modules:
+            http:
+              code: org.wildfly.extension.undertow.security.jaspi.modules.HTTPSchemeServerAuthModule
+              module: org.wildfly.extension.undertow
+              flag: required
+              login-module-stack-ref: roles-lm-stack
