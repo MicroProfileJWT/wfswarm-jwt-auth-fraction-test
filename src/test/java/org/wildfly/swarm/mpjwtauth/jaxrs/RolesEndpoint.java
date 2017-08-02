@@ -98,6 +98,19 @@ public class RolesEndpoint {
         throw new IllegalStateException("subject.getPrincipals(JWTPrincipal.class) == 0");
     }
 
+    /**
+     * This
+     * @return
+     */
+    @GET
+    @Path("/needsGroup1Mapping")
+    @RolesAllowed("Group1MappedRole")
+    public String needsGroup1Mapping(@Context SecurityContext sec) {
+        Principal user = sec.getUserPrincipal();
+        sec.isUserInRole("group1");
+        return user.getName();
+    }
+
     @GET
     @Path("/heartbeat")
     @PermitAll

@@ -40,6 +40,9 @@ public class RolesAllowedTest {
 
     @Deployment(testable = false)
     public static WebArchive createDeployment() throws IOException {
+        // Disable remote repository resolution
+        System.setProperty("swarm.resolver.offline", "true");
+
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
@@ -217,6 +220,22 @@ public class RolesAllowedTest {
     @Test
     public void getEJBSubjectClass() throws Exception {
         String uri = baseURL.toExternalForm() + "/endp/getEJBSubjectClass";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
+    }
+
+    /**
+     * This test requires that the server provide a mapping from the group1 grant in the token to a Group1MappedRole
+     * application declared role.
+     */
+    @Test
+    public void testNeedsGroup1Mapping() {
+        String uri = baseURL.toExternalForm() + "/endp/needsGroup1Mapping";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
                 .target(uri)
                 ;
