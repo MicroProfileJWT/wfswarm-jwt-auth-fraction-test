@@ -8,12 +8,14 @@ import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenChecksumPolicy;
 import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenRemoteRepositories;
 import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenRemoteRepository;
 import org.jboss.shrinkwrap.resolver.api.maven.repository.MavenUpdatePolicy;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Created by starksm on 7/29/17.
+ * Simple test to validate some expectations of the maven resolver as used by wfswarm.
  */
 public class ResolverTest {
+    @Ignore("non-MP-JWT testing ")
     @Test
     public void testLocalSnapshot() throws Exception {
 

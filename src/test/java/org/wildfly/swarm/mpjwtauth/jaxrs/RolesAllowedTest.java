@@ -29,7 +29,7 @@ import java.util.HashSet;
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 
 /**
- *
+ * Tests of the MP-JWT auth method as expected by the MP-JWT RBAC 1.0 spec
  */
 @RunWith(Arquillian.class)
 public class RolesAllowedTest {

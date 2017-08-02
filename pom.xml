@@ -26,27 +26,6 @@
     <arquillian.version>1.1.13.Final</arquillian.version>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.wildfly.swarm</groupId>
-        <artifactId>wildfly-swarm-plugin</artifactId>
-        <version>${version.wildfly.swarm}</version>
-        <executions>
-          <execution>
-            <id>package</id>
-          </execution>
-          <execution>
-            <id>start</id>
-          </execution>
-          <execution>
-            <id>stop</id>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -68,11 +47,29 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.microprofile.jwt</groupId>
+      <artifactId>jwt-auth-principal-ri</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-servlet</artifactId>
+      <version>1.4.0.Final</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>2.8.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.wildfly.swarm</groupId>
       <artifactId>microprofile-jwt-auth-fraction</artifactId>
       <version>1.0.0-SNAPSHOT</version>
+      <scope>test</scope>
     </dependency>
-
     <dependency>
       <groupId>javax</groupId>
       <artifactId>javaee-api</artifactId>

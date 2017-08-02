@@ -1,5 +1,10 @@
 # A project defaults for use with MP-JWT auth-method that include additional role mapping
 swarm:
+  # Example of passing in token verification information via project file
+  mpjwtauth:
+    token:
+      issuedBy: https://server.example.com
+      signerPubKey: MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQClH5+52mqHLdChbOfzuyue5FSDl2n1mOkpMlF1676NT79AScHVMi1IohWkuSe3W+oPLE+GAwyyr0DyolUmTkrhrMID6LamgmH8IzhOeyaxDOjwbCIUeGM1V9Qht+nTneRMhGa/oL687XioZiE1Ev52D8kMaKMNMHprL9oOZ/QM4wIDAQAB
   security:
     security-domains:
       jwt-jaspi:
@@ -14,7 +19,7 @@ swarm:
                   module-options:
                     rolesProperties: jwt-roles.properties
           auth-modules:
-          This module integrates the MP-JWT custom authentication mechanism into the web container
+          # This module integrates the MP-JWT custom authentication mechanism into the web container
             http:
               code: org.wildfly.extension.undertow.security.jaspi.modules.HTTPSchemeServerAuthModule
               module: org.wildfly.extension.undertow
