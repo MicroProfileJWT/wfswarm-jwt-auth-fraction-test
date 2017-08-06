@@ -8,7 +8,7 @@
     <!--
     <auth-method>BASIC</auth-method>
     -->
-    <auth-method>MP-JWT?issuedBy=https://server.example.com&amp;signerPubKey=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQClH5%2B52mqHLdChbOfzuyue5FSDl2n1mOkpMlF1676NT79AScHVMi1IohWkuSe3W%2BoPLE%2BGAwyyr0DyolUmTkrhrMID6LamgmH8IzhOeyaxDOjwbCIUeGM1V9Qht%2BnTneRMhGa%2FoL687XioZiE1Ev52D8kMaKMNMHprL9oOZ%2FQM4wIDAQAB</auth-method>
+    <auth-method>MP-JWT?issuedBy=https://server.example.com</auth-method>
   </login-config>
 
   <security-constraint>

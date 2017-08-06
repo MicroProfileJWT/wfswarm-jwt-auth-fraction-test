@@ -1,6 +1,7 @@
 package org.wildfly.swarm.mpjwtauth.jaxrs;
 
 import org.eclipse.microprofile.jwt.JWTPrincipal;
+import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jboss.arquillian.container.test.api.Deployment;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
@@ -13,7 +14,6 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.wildfly.swarm.mpjwtauth.util.TokenUtils;
 
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -42,11 +42,14 @@ public class RolesAllowedTest {
     public static WebArchive createDeployment() throws IOException {
         // Disable remote repository resolution
         System.setProperty("swarm.resolver.offline", "true");
+        //System.setProperty("swarm.logging", "DEBUG");
+        System.setProperty("swarm.debug.port", "8888");
 
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
                 .addAsResource(publicKey, "/publicKey.pem")
+                .addAsManifestResource(publicKey, "/MP-JWT-SIGNER")
                 .addAsResource("project-defaults.yml", "/project-defaults.yml")
                 //.addAsResource("project-defaults-basic.yml", "/project-defaults.yml")
                 .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())
