@@ -1,24 +1,25 @@
 # A project defaults for use with MP-JWT auth-method that include additional role mapping
 swarm:
+  # This does not work as the resolver runs before config, here to remind -Dswarm.resolver.offline=true to avoid remot repos
+  resolver:
+    offline: true
   # Example of passing in token verification information via project file
   mpjwtauth:
     token:
-      issuedBy: https://server.example.com
+      issuedBy: "https://server.example.com"
   security:
     security-domains:
       jwt-jaspi:
         jaspi-authentication:
           login-module-stacks:
-          # This stack performs the group to role mapping
             roles-lm-stack:
               login-modules:
                 - login-module: rm
-                  code: RoleMapping
-                  flag: optional
+                  code: org.eclipse.microprofile.jwt.wfswarm.jaas.JWTLoginModule
+                  flag: required
                   module-options:
                     rolesProperties: jwt-roles.properties
           auth-modules:
-          # This module integrates the MP-JWT custom authentication mechanism into the web container
             http:
               code: org.wildfly.extension.undertow.security.jaspi.modules.HTTPSchemeServerAuthModule
               module: org.wildfly.extension.undertow

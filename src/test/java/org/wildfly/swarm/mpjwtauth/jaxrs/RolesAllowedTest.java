@@ -42,8 +42,8 @@ public class RolesAllowedTest {
     public static WebArchive createDeployment() throws IOException {
         // Disable remote repository resolution
         System.setProperty("swarm.resolver.offline", "true");
-        //System.setProperty("swarm.logging", "DEBUG");
-        System.setProperty("swarm.debug.port", "8888");
+        //System.setProperty("swarm.logging", "TRACE");
+        //System.setProperty("swarm.debug.port", "8888");
 
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
@@ -54,7 +54,6 @@ public class RolesAllowedTest {
                 //.addAsResource("project-defaults-basic.yml", "/project-defaults.yml")
                 .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())
                 .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
-                .addAsWebInfResource("jwt-users.properties", "classes/jwt-users.properties")
                 .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
                 .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
                 .addAsWebInfResource("WEB-INF/jboss-web.xml", "jboss-web.xml")
