@@ -31,8 +31,15 @@
       <role-name>NoSuchRole</role-name>
     </auth-constraint>
   </security-constraint>
+  <security-constraint>
+    <display-name>needsGroup1Mapping restriction</display-name>
+    <web-resource-collection>
+      <web-resource-name>REST needsGroup1Mapping</web-resource-name>
+      <url-pattern>/endp/needsGroup1Mapping</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>Group1MappedRole</role-name>
+    </auth-constraint>
+  </security-constraint>
 
-  <security-role>
-    <role-name></role-name>
-  </security-role>
 </web-app>

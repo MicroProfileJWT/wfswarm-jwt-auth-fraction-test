@@ -16,7 +16,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.microprofile.jwt.JWTPrincipal;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @HttpConstraint(rolesAllowed={"Tester"})
 @WebServlet("/ServiceServlet/*")
@@ -61,10 +61,10 @@ public class ServiceServlet extends HttpServlet {
     private String getSubject(HttpServletResponse response) throws IOException {
         try {
             Subject subject = (Subject) PolicyContext.getContext("javax.security.auth.Subject.container");
-            Set<? extends Principal> principalSet = subject.getPrincipals(JWTPrincipal.class);
+            Set<? extends Principal> principalSet = subject.getPrincipals(JsonWebToken.class);
             if(principalSet.size() > 0)
-                return "subject.getPrincipals(JWTPrincipal.class) ok";
-            response.sendError(500, "subject.getPrincipals(JWTPrincipal.class) == 0");
+                return "subject.getPrincipals(JsonWebToken.class) ok";
+            response.sendError(500, "subject.getPrincipals(JsonWebToken.class) == 0");
         } catch (PolicyContextException e) {
             e.printStackTrace();
             response.sendError(500, e.getMessage());

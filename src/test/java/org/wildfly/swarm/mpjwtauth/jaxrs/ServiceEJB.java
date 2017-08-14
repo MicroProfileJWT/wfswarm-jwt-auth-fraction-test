@@ -12,7 +12,7 @@ import javax.ejb.Stateless;
 import javax.security.auth.Subject;
 import javax.security.jacc.PolicyContext;
 
-import org.eclipse.microprofile.jwt.JWTPrincipal;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
 @Stateless
 public class ServiceEJB implements IService {
@@ -51,11 +51,11 @@ public class ServiceEJB implements IService {
     public String getSubjectClass() throws Exception {
         Subject subject = (Subject) PolicyContext.getContext("javax.security.auth.Subject.container");
         System.out.printf("ServiceEJB.getSubjectClass, subject=%s\n", subject);
-        Set<? extends Principal> principalSet = subject.getPrincipals(JWTPrincipal.class);
+        Set<? extends Principal> principalSet = subject.getPrincipals(JsonWebToken.class);
         if (principalSet.size() > 0)
-            return "subject.getPrincipals(JWTPrincipal.class) ok";
+            return "subject.getPrincipals(JsonWebToken.class) ok";
         assert principalSet.size() > 0;
-        throw new IllegalStateException("subject.getPrincipals(JWTPrincipal.class) == 0");
+        throw new IllegalStateException("subject.getPrincipals(JsonWebToken.class) == 0");
 
     }
 }
