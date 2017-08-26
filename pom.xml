@@ -22,7 +22,7 @@
     <version.wildfly.swarm>2017.7.0</version.wildfly.swarm>
     <swarm.fraction.stability>experimental</swarm.fraction.stability>
     <swarm.fraction.tags>Security,Web</swarm.fraction.tags>
-    <version.wildfly.swarm.fraction-plugin>56</version.wildfly.swarm.fraction-plugin>
+    <version.wildfly.swarm.fraction-plugin>58</version.wildfly.swarm.fraction-plugin>
     <arquillian.version>1.1.13.Final</arquillian.version>
   </properties>
 
