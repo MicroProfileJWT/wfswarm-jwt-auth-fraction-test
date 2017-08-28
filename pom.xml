@@ -24,6 +24,7 @@
     <swarm.fraction.tags>Security,Web</swarm.fraction.tags>
     <version.wildfly.swarm.fraction-plugin>58</version.wildfly.swarm.fraction-plugin>
     <arquillian.version>1.1.13.Final</arquillian.version>
+    <version.testng>6.10</version.testng>
   </properties>
 
   <dependencyManagement>
@@ -86,6 +87,12 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>${version.testng}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
