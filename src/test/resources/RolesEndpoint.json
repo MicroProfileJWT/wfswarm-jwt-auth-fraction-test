@@ -9,17 +9,43 @@
   "iat": 1311280970,
   "auth_time": 1311280969,
   "roles": [
-    "Echoer", "Tester"
+    "Echoer"
   ],
-  "groups": ["Echoer", "Tester", "group1", "group2"],
-  "resource_access": {
-    "/endp/echo3": {
+  "groups": [
+    "Echoer",
+    "Tester",
+    "group1",
+    "group2"
+  ],
+  "customString": "customStringValue",
+  "customInteger": 123456789,
+  "customDouble": 3.141592653589793,
+  "customStringArray": [
+    "value0",
+    "value1",
+    "value2"
+  ],
+  "customIntegerArray": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "customDoubleArray": [
+    0.1,
+    1.1,
+    2.2,
+    3.3,
+    4.4
+  ],
+  "customObject": {
+    "my-service": {
       "groups": [
         "group1",
         "group2"
       ],
       "roles": [
-        "EndpointCustom"
+        "role-in-my-service"
       ]
     },
     "service-B": {
