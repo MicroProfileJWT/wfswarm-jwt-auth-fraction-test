@@ -3,7 +3,8 @@ package org.wildfly.swarm.mpjwtauth.container.jaxrs;
 import java.util.Optional;
 import java.util.Set;
 
-import javax.annotation.security.DenyAll;
+import javax.annotation.security.RolesAllowed;
+import javax.enterprise.context.RequestScoped;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.json.Json;
@@ -19,7 +20,8 @@ import org.eclipse.microprofile.jwt.Claim;
 import org.eclipse.microprofile.jwt.Claims;
 
 @Path("/endp")
-@DenyAll
+@RolesAllowed({"Echoer", "Tester"})
+@RequestScoped
 public class ProviderInjectionEndpoint {
     @Inject
     @Claim("raw_token")
@@ -33,9 +35,6 @@ public class ProviderInjectionEndpoint {
     @Inject
     @Claim("aud")
     private Provider<Set<String>> aud;
-    @Inject
-    @Claim("roles")
-    private Provider<String[]> roles;
     @Inject
     @Claim("iat")
     private Provider<Long> issuedAt;
