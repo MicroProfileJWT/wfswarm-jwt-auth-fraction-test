@@ -1,20 +1,19 @@
 package org.wildfly.swarm.mpjwtauth.jaxrs;
 
 import org.eclipse.microprofile.jwt.Claims;
-import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.jwt.tck.util.TokenUtils;
 import org.jboss.arquillian.container.test.api.Deployment;
-import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.test.api.ArquillianResource;
-import org.jboss.shrinkwrap.api.Filters;
+import org.jboss.arquillian.testng.Arquillian;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.asset.EmptyAsset;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.testng.Assert;
+import org.testng.Reporter;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+import org.wildfly.swarm.mpjwtauth.container.jaxrs.TCKApplication;
+import org.wildfly.swarm.mpjwtauth.container.jaxrs.TCKConstants;
 
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
@@ -26,91 +25,89 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
+import static org.wildfly.swarm.mpjwtauth.container.jaxrs.TCKConstants.TEST_GROUP_CDI;
+import static org.wildfly.swarm.mpjwtauth.container.jaxrs.TCKConstants.TEST_GROUP_JAXRS;
 
 /**
- * Tests of the MP-JWT auth method as expected by the MP-JWT RBAC 1.0 spec
+ * Tests of the MP-JWT auth method authorization behavior as expected by the MP-JWT RBAC 1.0 spec
  */
-@RunWith(Arquillian.class)
-public class RolesAllowedTest {
+public class RolesAllowedTest extends Arquillian {
 
-    // The RolesEndpoint.json JWT
+    /**
+     * The test generated JWT token string
+     */
     private static String token;
     // Time claims in the token
     private static Long iatClaim;
     private static Long authTimeClaim;
     private static Long expClaim;
+
+    /**
+     * The base URL for the container under test
+     */
     @ArquillianResource
     private URL baseURL;
 
-    @Deployment(testable = false)
+    /**
+     * Create a CDI aware base web application archive
+     * @return the base base web application archive
+     * @throws IOException - on resource failure
+     */
+    @Deployment(testable=true)
     public static WebArchive createDeployment() throws IOException {
-        // Disable remote repository resolution
         System.setProperty("swarm.resolver.offline", "true");
-        //System.setProperty("swarm.logging", "TRACE");
+        //System.setProperty("swarm.logging", "DEBUG");
         //System.setProperty("swarm.debug.port", "8888");
 
         URL publicKey = RolesAllowedTest.class.getResource("/publicKey.pem");
         WebArchive webArchive = ShrinkWrap
                 .create(WebArchive.class, "RolesAllowedTest.war")
                 .addAsResource(publicKey, "/publicKey.pem")
-                .addAsManifestResource(publicKey, "/MP-JWT-SIGNER")
+                .addAsManifestResource("publicKey.pem", "/MP-JWT-SIGNER")
+                .addClass(IService.class)
+                .addClass(ServiceEJB.class)
+                .addClass(ServiceServlet.class)
+                .addClass(RolesEndpoint.class)
+                .addClass(TCKApplication.class)
+                .addAsWebInfResource("beans.xml", "beans.xml")
                 .addAsResource("project-defaults.yml", "/project-defaults.yml")
-                //.addAsResource("project-defaults-basic.yml", "/project-defaults.yml")
-                .addPackages(true, Filters.exclude(".*Test.*"), RolesEndpoint.class.getPackage())
-                .addAsWebInfResource(EmptyAsset.INSTANCE, "beans.xml")
                 .addAsWebInfResource("jwt-roles.properties", "classes/jwt-roles.properties")
-                .addAsWebInfResource("WEB-INF/web.xml", "web.xml")
                 .addAsWebInfResource("WEB-INF/jboss-web.xml", "jboss-web.xml")
+                .setWebXML("WEB-INF/web.xml")
                 ;
         System.out.printf("WebArchive: %s\n", webArchive.toString(true));
         return webArchive;
     }
-    @BeforeClass
+
+    @BeforeClass(alwaysRun=true)
     public static void generateToken() throws Exception {
         HashMap<String, Long> timeClaims = new HashMap<>();
-        token = TokenUtils.generateTokenString("/RolesEndpoint.json", null, timeClaims);
+        token = TokenUtils.generateTokenString("/Token1.json", null, timeClaims);
         iatClaim = timeClaims.get(Claims.iat.name());
         authTimeClaim = timeClaims.get(Claims.auth_time.name());
         expClaim = timeClaims.get(Claims.exp.name());
     }
-    @Test
+
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS, description = "Validate a request with no token fails with HTTP_UNAUTHORIZED")
     public void callEchoNoAuth() throws Exception {
+        Reporter.log("callEchoNoAuth, expect HTTP_UNAUTHORIZED");
         String uri = baseURL.toExternalForm() + "/endp/echo";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
                 .target(uri)
                 .queryParam("input", "hello")
                 ;
         Response response = echoEndpointTarget.request(TEXT_PLAIN).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_UNAUTHORIZED);
     }
 
-    @Test
-    public void callEchoExpiredToken() throws Exception {
-        HashSet<TokenUtils.InvalidClaims> invalidFields = new HashSet<>();
-        invalidFields.add(TokenUtils.InvalidClaims.EXP);
-        String token = TokenUtils.generateTokenString("/RolesEndpoint.json", invalidFields);
-        System.out.printf("jwt: %s\n", token);
-
-        String uri = baseURL.toExternalForm() + "/endp/echo";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                .queryParam("input", "hello")
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_UNAUTHORIZED, response.getStatus());
-        String reply = response.readEntity(String.class);
-    }
-
-    /**
-     * Used to test how a standard auth-method works with the authorization layer.
-     * @throws Exception
-     */
-    @Test
-    @Ignore
+    @RunAsClient
+    @Test(groups = TCKConstants.TEST_GROUP_JAXRS,
+            description = "Attempting access with BASIC auth header should fail with HTTP_UNAUTHORIZED")
     public void callEchoBASIC() throws Exception {
+        Reporter.log("callEchoBASIC, expect HTTP_UNAUTHORIZED");
         byte[] tokenb = Base64.getEncoder().encode("jdoe@example.com:password".getBytes());
         String token = new String(tokenb);
         System.out.printf("basic: %s\n", token);
@@ -121,14 +118,16 @@ public class RolesAllowedTest {
                 .queryParam("input", "hello")
                 ;
         Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "BASIC "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_UNAUTHORIZED);
         String reply = response.readEntity(String.class);
-        Assert.assertEquals("hello, user=jdoe@example.com", reply);
+        System.out.println(reply);
     }
 
-    @Test
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS,
+            description = "Validate a request with MP-JWT succeeds with HTTP_OK, and replies with hello, user={token upn claim}")
     public void callEcho() throws Exception {
-        System.out.printf("jwt: %s\n", token);
+        Reporter.log("callEcho, expect HTTP_OK");
 
         String uri = baseURL.toExternalForm() + "/endp/echo";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
@@ -138,12 +137,14 @@ public class RolesAllowedTest {
         Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
         Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
         String reply = response.readEntity(String.class);
-        Assert.assertEquals("hello, user=jdoe@example.com", reply);
+        // Must return hello, user={token upn claim}
+        Assert.assertEquals(reply, "hello, user=jdoe@example.com");
     }
 
-    @Test
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS, description = "Validate a request with MP-JWT but no associated role fails with HTTP_FORBIDDEN")
     public void callEcho2() throws Exception {
-        System.out.printf("jwt: %s\n", token);
+        Reporter.log("callEcho2, expect HTTP_FORBIDDEN");
 
         String uri = baseURL.toExternalForm() + "/endp/echo2";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
@@ -152,175 +153,131 @@ public class RolesAllowedTest {
                 ;
         Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
         String reply = response.readEntity(String.class);
-        Assert.assertEquals(HttpURLConnection.HTTP_FORBIDDEN, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_FORBIDDEN);
     }
 
-    @Test
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS, description = "Validate a request with MP-JWT is able to access checkIsUserInRole with HTTP_OK")
+    public void checkIsUserInRole() throws Exception {
+        Reporter.log("checkIsUserInRole, expect HTTP_OK");
+
+        String uri = baseURL.toExternalForm() + "/endp/checkIsUserInRole";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        String reply = response.readEntity(String.class);
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
+    }
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS, description = "Validate a request with MP-JWT Token2 fails to access checkIsUserInRole with HTTP_FORBIDDEN")
+    public void checkIsUserInRoleToken2() throws Exception {
+        Reporter.log("checkIsUserInRoleToken2, expect HTTP_FORBIDDEN");
+        String token2 = TokenUtils.generateTokenString("/Token2.json");
+
+        String uri = baseURL.toExternalForm() + "/endp/checkIsUserInRole";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token2).get();
+        String reply = response.readEntity(String.class);
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_FORBIDDEN);
+    }
+
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS, description = "Validate a request with MP-JWT Token2 is able to access echoNeedsToken2Role with HTTP_OK")
+    public void echoNeedsToken2Role() throws Exception {
+        Reporter.log("echoNeedsToken2Role, expect HTTP_FORBIDDEN");
+        String token2 = TokenUtils.generateTokenString("/Token2.json");
+
+        String uri = baseURL.toExternalForm() + "/endp/echoNeedsToken2Role";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                .queryParam("input", "hello")
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token2).get();
+        String reply = response.readEntity(String.class);
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
+    }
+
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS, description = "Validate a request with MP-JWT Token2 calling echo fails with HTTP_FORBIDDEN")
+    public void echoWithToken2() throws Exception {
+        Reporter.log("echoWithToken2, expect HTTP_FORBIDDEN");
+        String token2 = TokenUtils.generateTokenString("/Token2.json");
+
+        String uri = baseURL.toExternalForm() + "/endp/echo";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                .queryParam("input", "hello")
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token2).get();
+        String reply = response.readEntity(String.class);
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_FORBIDDEN);
+    }
+
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS,
+            description = "Validate a request with MP-JWT SecurityContext.getUserPrincipal() is a JsonWebToken")
     public void getPrincipalClass() throws Exception {
+        Reporter.log("getPrincipalClass, expect HTTP_OK");
         String uri = baseURL.toExternalForm() + "/endp/getPrincipalClass";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
                 .target(uri)
                 ;
         Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
         String reply = response.readEntity(String.class);
-        String[] ifaces = reply.split(",");
-        boolean hasJsonWebToken = false;
-        for(String iface : ifaces) {
-            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
-        }
-        Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
-    }
-    @Test
-    public void getInjectedPrincipal() throws Exception {
-        String uri = baseURL.toExternalForm() + "/endp/getInjectedPrincipal";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        String[] ifaces = reply.split(",");
-        boolean hasJsonWebToken = false;
-        for(String iface : ifaces) {
-            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
-        }
-        Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
-    }
-
-    @Test
-    public void getInjectedClaims() throws Exception {
-        String uri = baseURL.toExternalForm() + "/endp/getInjectedClaims";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.jti.name(), "a-123")
-                .queryParam(Claims.aud.name(), "s6BhdRkqt3")
-                .queryParam(Claims.sub.name(), "24400320")
-                .queryParam(Claims.raw_token.name(), token)
-                .queryParam(Claims.iat.name(), iatClaim)
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        System.out.println(reply);
-        Assert.assertTrue("has iss", reply.contains("iss PASS"));
-        Assert.assertTrue("has jti", reply.contains("jti PASS"));
-        Assert.assertTrue("has aud", reply.contains("aud PASS"));
-        Assert.assertTrue("has iat", reply.contains("iat PASS"));
-        Assert.assertTrue("has sub", reply.contains("sub PASS"));
-        Assert.assertTrue("has auth_time", reply.contains("auth_time PASS"));
-        Assert.assertTrue("has raw_token", reply.contains("raw_token PASS"));
-    }
-
-    @Test
-    @Ignore("TODO: look into behavior of this test")
-    public void getInjectedPrincipalNoAuth() throws Exception {
-        String uri = baseURL.toExternalForm() + "/endp/getInjectedPrincipal";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        Assert.assertEquals("PrincipalClass has JsonWebToken interface", "NO_INJECTED_PRINCIPAL", reply);
-    }
-    @Test
-    public void getSubjectClass() throws Exception {
-        String uri = baseURL.toExternalForm() + "/endp/getSubjectClass";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        System.out.println(reply);
-    }
-
-    @Test
-    public void getServletPrincipalClass() throws Exception {
-        String uri = baseURL.toExternalForm() + "/ServiceServlet/getPrincipalClass";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        String[] ifaces = reply.split(",");
-        boolean hasJsonWebToken = false;
-        for(String iface : ifaces) {
-            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
-        }
-        Assert.assertTrue("PrincipalClass has JsonWebToken interface", hasJsonWebToken);
-    }
-
-    @Test
-    public void getServletSubjectClass() throws Exception {
-        String uri = baseURL.toExternalForm() + "/ServiceServlet/getSubject";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        System.out.println(reply);
-    }
-
-    @Test
-    public void testEJBPrincipalClass() throws Exception {
-        String uri = baseURL.toExternalForm() + "/endp/getEJBPrincipalClass";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        String[] ifaces = reply.split(",");
-        boolean hasJsonWebToken = false;
-        for(String iface : ifaces) {
-            hasJsonWebToken |= iface.equals(JsonWebToken.class.getTypeName());
-        }
-        Assert.assertTrue("EJB PrincipalClass has JsonWebToken interface", hasJsonWebToken);
-    }
-
-    @Test
-    public void getEJBSubjectClass() throws Exception {
-        String uri = baseURL.toExternalForm() + "/endp/getEJBSubjectClass";
-        WebTarget echoEndpointTarget = ClientBuilder.newClient()
-                .target(uri)
-                ;
-        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        String reply = response.readEntity(String.class);
-        System.out.println(reply);
+        Assert.assertEquals(reply, "isJsonWebToken:true");
     }
 
     /**
      * This test requires that the server provide a mapping from the group1 grant in the token to a Group1MappedRole
      * application declared role.
      */
-    @Test
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS,
+            description = "Validate a request without an MP-JWT to endpoint requiring role mapping has HTTP_OK")
     public void testNeedsGroup1Mapping() {
+        Reporter.log("testNeedsGroup1Mapping, expect HTTP_OK");
         String uri = baseURL.toExternalForm() + "/endp/needsGroup1Mapping";
+        WebTarget echoEndpointTarget = ClientBuilder.newClient()
+                .target(uri)
+                ;
+        Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
+        String reply = response.readEntity(String.class);
+        System.out.println(reply);
+    }
+
+    @RunAsClient
+    @Test(groups = TEST_GROUP_CDI,
+            description = "Validate that accessing secured method has HTTP_OK and injected JsonWebToken principal")
+    public void getInjectedPrincipal() throws Exception {
+        Reporter.log("getInjectedPrincipal, expect HTTP_OK");
+        String uri = baseURL.toExternalForm() + "/endp/getInjectedPrincipal";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
                 .target(uri)
                 ;
         Response response = echoEndpointTarget.request(TEXT_PLAIN).header(HttpHeaders.AUTHORIZATION, "Bearer "+token).get();
         Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
         String reply = response.readEntity(String.class);
-        System.out.println(reply);
+        Assert.assertEquals(reply, "isJsonWebToken:true");
     }
 
-    @Test
+    @RunAsClient
+    @Test(groups = TEST_GROUP_JAXRS,
+            description = "Validate a request without an MP-JWT to unsecured endpoint has HTTP_OK with expected response")
     public void callHeartbeat() throws Exception {
+        Reporter.log("callHeartbeat, expect HTTP_OK");
         String uri = baseURL.toExternalForm() + "/endp/heartbeat";
         WebTarget echoEndpointTarget = ClientBuilder.newClient()
                 .target(uri)
                 .queryParam("input", "hello")
                 ;
         Response response = echoEndpointTarget.request(TEXT_PLAIN).get();
-        Assert.assertEquals(HttpURLConnection.HTTP_OK, response.getStatus());
-        Assert.assertTrue("Heartbeat:", response.readEntity(String.class).startsWith("Heartbeat:"));
+        Assert.assertEquals(response.getStatus(), HttpURLConnection.HTTP_OK);
+        String reply = response.readEntity(String.class);
+        Assert.assertTrue(reply.startsWith("Heartbeat:"), "Saw Heartbeat: ...");
     }
 }

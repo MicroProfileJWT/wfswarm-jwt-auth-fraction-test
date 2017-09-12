@@ -5,6 +5,7 @@ import java.util.Set;
 
 import javax.annotation.security.RolesAllowed;
 import javax.enterprise.context.RequestScoped;
+import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.json.Json;
@@ -25,7 +26,7 @@ import org.eclipse.microprofile.jwt.Claims;
 public class ProviderInjectionEndpoint {
     @Inject
     @Claim("raw_token")
-    private Provider<String> rawToken;
+    private Instance<String> rawToken;
     @Inject
     @Claim("iss")
     private Provider<String> issuer;

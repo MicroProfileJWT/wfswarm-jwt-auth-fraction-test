@@ -363,7 +363,7 @@ public class JsonValuejectionEndpoint {
     @GET
     @Path("/verifyInjectedCustomDoubleArray")
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed("Tester")
+    @RolesAllowed({"Tester", "Tester2"})
     public JsonObject verifyInjectedCustomDoubleArray(@QueryParam("value") List<Double> array) {
         boolean pass = false;
         HashSet<BigDecimal> expected = new HashSet<>();

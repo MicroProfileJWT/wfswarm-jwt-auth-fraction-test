@@ -2,10 +2,6 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xsi:schemaLocation="http://www.jboss.com/xml/ns/javaee http://www.jboss.org/j2ee/schema/jboss-web_7_1.xsd"
            version="7.1">
-  <security-domain>jwt-jaspi</security-domain>
-  <security-role>
-    <role-name>SomeJBossWebXmlMappedRole</role-name>
-    <principal-name>jdoe@example.com</principal-name>
-  </security-role>
+  <security-domain>TCK-MP-JWT</security-domain>
   <use-jboss-authorization>false</use-jboss-authorization>
 </jboss-web>
