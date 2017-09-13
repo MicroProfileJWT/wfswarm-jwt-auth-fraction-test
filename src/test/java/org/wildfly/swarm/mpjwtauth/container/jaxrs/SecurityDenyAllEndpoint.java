@@ -15,9 +15,9 @@ import javax.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
-@Path("/secured")
+@Path("/secured-deny-all")
 @DenyAll
-public class SecurityEndpoint {
+public class SecurityDenyAllEndpoint {
 
     @Inject
     private JsonWebToken jwt;
@@ -56,6 +56,13 @@ public class SecurityEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     public String denyAll() {
         return "Heartbeat: "+ new Date(System.currentTimeMillis()).toString();
+    }
+
+    @GET
+    @Path("/inheritDenyAll")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String inheritDenyAll() {
+        return jwt.getName();
     }
 }
 
